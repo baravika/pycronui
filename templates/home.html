@@ -39,22 +39,22 @@
                     </td>
                     <td>
                         <a href="/">
-                            <button type="button" class="ui grey basic button" value={{ job.id }}><i
+                            <button type="button" class="ui grey basic button" value={{ job.name }}><i
                                     class="play icon"></i>
                             </button>
                         </a>
-                        <a href="/jobs/{{ job.id }}" class="btn btn-primary">
+                        <a href="/jobs/{{ job.name }}" class="btn btn-primary">
                             <button type="button"
                                     class="ui inverted primary button">Update
                             </button>
                         </a>
                         <a href="/">
-                            <button id="delete" type="button" class="ui inverted red button" value={{ job.id }}>Delete
+                            <button id="delete" type="button" class="ui inverted red button" value={{ job.name }}>Delete
                             </button>
                         </a>
                     </td>
                     <td>
-                        <a href="/logs/{{ job.id }}" class="btn btn-primary">
+                        <a href="/logs/{{ job.name }}" class="btn btn-primary">
                             <button type="button"
                                     class="ui blue button">Logs
                             </button>

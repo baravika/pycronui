@@ -7,57 +7,47 @@ import models
 import cronservice
 from models import Job
 from utils import watch_status, load_logs
-from database import SessionLocal, engine, JobRequest
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-models.Base.metadata.create_all(bind=engine)
 templates = Jinja2Templates(directory="templates")
 
 
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
+def update_displayed_schedule() -> None:
+    jobs = cronservice.get_cron_jobs()
 
-
-def update_displayed_schedule(db: Session = Depends(get_db)) -> None:
-    jobs = db.query(Job).all()
     for job in jobs:
         job.next_run = cronservice.get_next_schedule(job.name)
         job.status = watch_status(job.name)
 
+    return jobs
+
 
 @app.get("/")
-async def home(request: Request, db: Session = Depends(get_db)):
-    update_displayed_schedule(db)
-    jobs = db.query(Job).all()
+async def home(request: Request):
+    jobs = update_displayed_schedule()
     output = {"request": request, "jobs": jobs}
     return templates.TemplateResponse("home.html", output)
 
 
 @app.get("/jobs/{job_id}")
-async def get_jobs(job_id: int, request: Request, db: Session = Depends(get_db)):
+async def get_jobs(job_id: int, request: Request):
     job_update = db.query(Job).filter(Job.id == job_id).first()
     output = {"request": request, "job_update": job_update}
     return templates.TemplateResponse("jobs.html", output)
 
 
 @app.get("/logs/{job_id}")
-async def get_logs(job_id: int, request: Request, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id)
-    update_log = {"log": load_logs(job.first().name)}
+async def get_logs(job_name, request: Request):
+    update_log = {"log": load_logs(job_name)}
     job.update(update_log)
-    db.commit()
     output = {"request": request, "job": update_log}
     return templates.TemplateResponse("logs.html", output)
 
 
 @app.post("/create_job/")
-async def create_job(job_request: JobRequest, db: Session = Depends(get_db)):
+async def create_job(job_request: Request):
     job = Job()
     job.command = job_request.command
     job.name = job_request.name
@@ -65,17 +55,13 @@ async def create_job(job_request: JobRequest, db: Session = Depends(get_db)):
     try:
         cronservice.add_cron_job(job.command, job.name, job.schedule)
         job.next_run = cronservice.get_next_schedule(job.name)
-        db.add(job)
-        db.commit()
     except ValueError:
         raise HTTPException(status_code=404, detail="Invalid Cron Expression")
     return job_request
 
 
 @app.put("/update_job/{job_id}/")
-async def update_job(
-    job_id: int, job_request: JobRequest, db: Session = Depends(get_db)
-):
+async def update_job(job_id: int):
     existing_job = db.query(Job).filter(Job.id == job_id)
     cronservice.update_cron_job(
         job_request.command,
@@ -90,16 +76,13 @@ async def update_job(
 
 
 @app.get("/run_job/{job_id}/")
-async def run_job(job_id: int, db: Session = Depends(get_db)):
-    chosen_job = db.query(Job).filter(Job.id == job_id).first()
-    chosen_name = chosen_job.name
-    cronservice.run_manually(chosen_name)
+async def run_job(job_name):
+    cronservice.run_manually(job_name)
     return {"msg": "Successfully run job."}
 
 
 @app.delete("/job/{job_id}/")
-async def delete_job(job_id: int, db: Session = Depends(get_db)):
-    job_update = db.query(Job).filter(Job.id == job_id).first()
+async def delete_job(job_id: int):
     cronservice.delete_cron_job(job_update.name)
     db.delete(job_update)
     db.commit()

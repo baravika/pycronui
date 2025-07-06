@@ -2,12 +2,13 @@ from crontab import CronTab
 from croniter import croniter
 from datetime import datetime
 import getpass
+from models import Job
 
 from utils import add_log_file, Command, Name, Schedule, delete_log_file
 
 _user = getpass.getuser()
 
-_cron = CronTab(user=_user)
+_cron = CronTab(user=False)
 
 
 def add_cron_job(comm: Command, name: Name, sched: Schedule) -> None:
@@ -43,8 +44,23 @@ def run_manually(name: Name) -> None:
 def get_next_schedule(name: Name) -> str:
     try:
         match = _cron.find_comment(name)
+        print(match)
         job = list(match)[0]
         schedule = job.schedule(date_from=datetime.now())
         return schedule.get_next().strftime("%d/%m/%Y %H:%M:%S").replace("/", "-")
     except IndexError:
         return None
+
+
+def get_cron_jobs() -> list:
+    jobs = []
+    _cron.read("/etc/cron.d/e2scrub_all")
+    for cron in _cron.crons:
+        job = Job(
+            command=cron.command,
+            name=cron.comment,
+            schedule=cron.slices,
+        )
+        jobs.append(job)
+    print(jobs)
+    return jobs
