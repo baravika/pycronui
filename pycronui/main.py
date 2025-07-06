@@ -34,9 +34,9 @@ async def home(request: Request, cronservice: CronService = Depends(get_cron_ser
     return templates.TemplateResponse("home.html", output)
 
 
-@app.get("/jobs/{job_id}")
-async def get_jobs(job_id: int, request: Request):
-    job_update = db.query(Job).filter(Job.id == job_id).first()
+@app.get("/jobs/{job_name}")
+async def get_jobs(job_name: str, request: Request, cronservice: CronService = Depends(get_cron_service)):
+    job_update = cronservice.get_cron_job(job_name)
     output = {"request": request, "job_update": job_update}
     return templates.TemplateResponse("jobs.html", output)
 
@@ -60,30 +60,24 @@ async def create_job(job_request: JobRequest, cronservice: CronService = Depends
     return job_request
 
 
-@app.put("/update_job/{job_id}/")
-async def update_job(job_id: int, cronservice: CronService = Depends(get_cron_service)):
-    existing_job = db.query(Job).filter(Job.id == job_id)
+@app.put("/update_job/{job_name}/")
+async def update_job(job_name: str, job_request: JobRequest, cronservice: CronService = Depends(get_cron_service)):
     cronservice.update_cron_job(
         job_request.command,
         job_request.name,
         job_request.schedule,
-        existing_job.first().name,
+        job_name,
     )
-    existing_job.update(job_request.__dict__)
-    existing_job.update({"next_run": cronservice.get_next_schedule(job_request.name)})
-    db.commit()
     return {"msg": "Successfully updated data."}
 
 
-@app.get("/run_job/{job_id}/")
+@app.get("/run_job/{job_name}/")
 async def run_job(job_name, cronservice: CronService = Depends(get_cron_service)):
     cronservice.run_manually(job_name)
     return {"msg": "Successfully run job."}
 
 
-@app.delete("/job/{job_id}/")
-async def delete_job(job_id: int, cronservice: CronService = Depends(get_cron_service)):
-    cronservice.delete_cron_job(job_update.name)
-    db.delete(job_update)
-    db.commit()
+@app.delete("/job/{job_name}/")
+async def delete_job(job_name: str, cronservice: CronService = Depends(get_cron_service)):
+    cronservice.delete_cron_job(job_name)
     return {"INFO": f"Deleted {job_id} Successfully"}

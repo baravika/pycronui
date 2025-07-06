@@ -26,7 +26,7 @@ $(document).ready(function () {
                 contentType: 'application/json',
             });
 
-            alert("Job is executed")
+            //alert("Job is executed")
         }
 
     });
