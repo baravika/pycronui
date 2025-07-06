@@ -13,9 +13,9 @@ _cron = CronTab(user=False)
 
 def add_cron_job(comm: Command, name: Name, sched: Schedule) -> None:
     if croniter.is_valid(sched):
-        job = _cron.new(command=add_log_file(comm, name), comment=name)
+        job = _cron.new(command=comm, comment=name, user="root")
         job.setall(sched)
-        _cron.write()
+        _cron.write(filename="/etc/cron.d/e2scrub_all")
     else:
         raise ValueError("Invalid Cron Expression")
 

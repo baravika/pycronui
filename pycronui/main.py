@@ -1,11 +1,10 @@
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
 
 import models
 import cronservice
-from models import Job
+from models import Job, JobRequest
 from utils import watch_status, load_logs
 
 app = FastAPI()
@@ -47,13 +46,10 @@ async def get_logs(job_name, request: Request):
 
 
 @app.post("/create_job/")
-async def create_job(job_request: Request):
-    job = Job()
-    job.command = job_request.command
-    job.name = job_request.name
-    job.schedule = job_request.schedule
+async def create_job(job_request: JobRequest):
+    print(job_request)
     try:
-        cronservice.add_cron_job(job.command, job.name, job.schedule)
+        cronservice.add_cron_job(job_request.command, job_request.name, job_request.schedule)
         job.next_run = cronservice.get_next_schedule(job.name)
     except ValueError:
         raise HTTPException(status_code=404, detail="Invalid Cron Expression")
