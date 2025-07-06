@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import models
-import cronservice
+from cronservice import CronService
 from models import Job, JobRequest
 from utils import watch_status, load_logs
 
@@ -13,7 +13,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-def update_displayed_schedule() -> None:
+def get_cron_service():
+    return CronService()
+
+
+def update_displayed_schedule(cronservice) -> None:
     jobs = cronservice.get_cron_jobs()
 
     for job in jobs:
@@ -24,8 +28,8 @@ def update_displayed_schedule() -> None:
 
 
 @app.get("/")
-async def home(request: Request):
-    jobs = update_displayed_schedule()
+async def home(request: Request, cronservice: CronService = Depends(get_cron_service)):
+    jobs = update_displayed_schedule(cronservice)
     output = {"request": request, "jobs": jobs}
     return templates.TemplateResponse("home.html", output)
 
@@ -46,7 +50,7 @@ async def get_logs(job_name, request: Request):
 
 
 @app.post("/create_job/")
-async def create_job(job_request: JobRequest):
+async def create_job(job_request: JobRequest, cronservice: CronService = Depends(get_cron_service)):
     print(job_request)
     try:
         cronservice.add_cron_job(job_request.command, job_request.name, job_request.schedule)
@@ -57,7 +61,7 @@ async def create_job(job_request: JobRequest):
 
 
 @app.put("/update_job/{job_id}/")
-async def update_job(job_id: int):
+async def update_job(job_id: int, cronservice: CronService = Depends(get_cron_service)):
     existing_job = db.query(Job).filter(Job.id == job_id)
     cronservice.update_cron_job(
         job_request.command,
@@ -72,13 +76,13 @@ async def update_job(job_id: int):
 
 
 @app.get("/run_job/{job_id}/")
-async def run_job(job_name):
+async def run_job(job_name, cronservice: CronService = Depends(get_cron_service)):
     cronservice.run_manually(job_name)
     return {"msg": "Successfully run job."}
 
 
 @app.delete("/job/{job_id}/")
-async def delete_job(job_id: int):
+async def delete_job(job_id: int, cronservice: CronService = Depends(get_cron_service)):
     cronservice.delete_cron_job(job_update.name)
     db.delete(job_update)
     db.commit()
