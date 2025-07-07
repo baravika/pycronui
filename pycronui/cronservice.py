@@ -28,17 +28,17 @@ class CronService:
         self._crontab = CronTab(user=False)
         #self.jobs = []
 
-    def add_cron_job(self, comm: Command, name: Name, sched: Schedule) -> None:
+    def add_cron_job(self, comm: Command, name: Name, sched: Schedule, user) -> None:
         if croniter.is_valid(sched):
-            job = self._crontab.new(command=comm, comment=name, user="root")
+            job = self._crontab.new(command=comm, comment=name, user=user)
             job.setall(sched)
             self._crontab.write(self.filename)
         else:
             raise ValueError("Invalid Cron Expression")
 
-    def update_cron_job(self, comm: Command, name: Name, sched: Schedule, old_name: Name) -> None:
+    def update_cron_job(self, comm: Command, name: Name, sched: Schedule, old_name: Name, user) -> None:
         self.delete_cron_job(old_name)
-        self.add_cron_job(comm, name, sched)
+        self.add_cron_job(comm, name, sched, user)
 
     def delete_cron_job(self, name: Name) -> None:
         self._crontab.remove_all(comment=name)
@@ -67,6 +67,7 @@ class CronService:
                 command=cron.command,
                 name=cron.comment,
                 schedule=cron.slices,
+                user=cron.user,
             )
             jobs.append(job)
         return jobs

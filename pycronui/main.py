@@ -51,9 +51,8 @@ async def get_logs(job_name, request: Request):
 
 @app.post("/create_job/")
 async def create_job(job_request: JobRequest, cronservice: CronService = Depends(get_cron_service)):
-    print(job_request)
     try:
-        cronservice.add_cron_job(job_request.command, job_request.name, job_request.schedule)
+        cronservice.add_cron_job(job_request.command, job_request.name, job_request.schedule, job_request.user)
         job.next_run = cronservice.get_next_schedule(job.name)
     except ValueError:
         raise HTTPException(status_code=404, detail="Invalid Cron Expression")
@@ -67,6 +66,7 @@ async def update_job(job_name: str, job_request: JobRequest, cronservice: CronSe
         job_request.name,
         job_request.schedule,
         job_name,
+        job_request.user
     )
     return {"msg": "Successfully updated data."}
 

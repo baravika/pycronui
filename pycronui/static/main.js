@@ -36,8 +36,9 @@ $(document).ready(function () {
         const command = $("#command").val();
         const command_name = $("#command_name").val();
         const schedule = $("#schedule").val();
+        const user = $("#user").val();
 
-        if (command === "" || command_name === "" || schedule === "") {
+        if (command === "" || command_name === "" || schedule === "" || user === "") {
             alert("You must fill out all fields")
         } else {
             $.ajax({
@@ -47,7 +48,8 @@ $(document).ready(function () {
                 data: JSON.stringify({
                     "command": command,
                     "name": command_name,
-                    "schedule": schedule
+                    "schedule": schedule,
+                    "user": user
                 }),
                 statusCode: {
                     404: function () {
@@ -69,8 +71,9 @@ $(document).ready(function () {
         const command = $("#command").val();
         const command_name = $("#command_name").val();
         const schedule = $("#schedule").val();
+        const user = $("#user").val();
 
-        if (command === "" || command_name === "" || schedule === "") {
+        if (command === "" || command_name === "" || schedule === "" || user === "") {
             alert("You must fill out all fields")
         } else {
             $.ajax({
@@ -80,7 +83,8 @@ $(document).ready(function () {
                 data: JSON.stringify({
                     "command": command,
                     "name": command_name,
-                    "schedule": schedule
+                    "schedule": schedule,
+                    "user": user
                 }),
                 statusCode: {
                     500: function () {
